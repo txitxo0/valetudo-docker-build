@@ -1,0 +1,81 @@
+name: CI
+on: [workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build for ${{ matrix.image_name }}
+    strategy:
+      matrix:
+        include:
+          # Alpine
+          - image_name: alpine-armv6
+            build_from: arm32v6/node:16-alpine
+            run_from: arm32v6/alpine:latest
+            pkg_target: node16-linuxstatic-armv6
+            pkg_memory: 34
+          # - image_name: alpine-armv7
+          #   build_from: arm32v7/node:16-alpine
+          #   run_from: arm32v7/alpine:latest
+          #   pkg_target: node16-linuxstatic-armv7
+          #   pkg_memory: 34
+          # - image_name: alpine-aarch64
+          #   build_from: arm64v8/node:16-alpine
+          #   run_from: arm64v8/alpine:latest
+          #   pkg_target: node16-linuxstatic-arm64
+          #   pkg_memory: 64
+          # - image_name: alpine-amd64
+          #   build_from: amd64/node:16-alpine
+          #   run_from: amd64/alpine:latest
+          #   pkg_target: node16-linuxstatic-x64
+          #   pkg_memory: 64
+          # - image_name: alpine-i386
+          #   build_from: i386/node:16-alpine
+          #   run_from: i386/alpine:latest
+          #   pkg_target: node16-linuxstatic-x64
+          #   pkg_memory: 64
+          # # Home assistant
+          # - image_name: homeassistant-armhf
+          #   build_from: arm32v7/node:16-alpine
+          #   run_from: homeassistant/armhf-base:latest
+          #   pkg_target: node16-linuxstatic-armv7
+          #   pkg_memory: 34
+          # - image_name: homeassistant-armv7
+          #   build_from: arm32v7/node:16-alpine
+          #   run_from: homeassistant/armv7-base:latest
+          #   pkg_target: node16-linuxstatic-armv7
+          #   pkg_memory: 34
+          # - image_name: homeassistant-aarch64
+          #   build_from: arm64v8/node:16-alpine
+          #   run_from: homeassistant/aarch64-base:latest
+          #   pkg_target: node16-linuxstatic-arm64
+          #   pkg_memory: 64
+          # - image_name: homeassistant-amd64
+          #   build_from: amd64/node:16-alpine
+          #   run_from: homeassistant/amd64-base:latest
+          #   pkg_target: node16-linuxstatic-x64
+          #   pkg_memory: 64
+          # - image_name: homeassistant-i386
+          #   build_from: i386/node:16-alpine
+          #   run_from: homeassistant/i386-base:latest
+          #   pkg_target: node16-linuxstatic-x64
+          #   pkg_memory: 64
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: adrigzr
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: false
+          tags: adrigzr/valetudo-conga:${{ matrix.image_name }}
+          build-args: |
+            "BUILD_FROM=${{ matrix.build_from }}"
+            "RUN_FROM=${{ matrix.run_from }}"
+            "PKG_TARGET=${{ matrix.pkg_target }}"
+            "PKG_MEMORY=${{ matrix.pkg_memory }}"
