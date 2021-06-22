@@ -1,7 +1,6 @@
 # Stage 1
-ARG BUILD_FROM=node:16-alpine
-ARG RUN_FROM=alpine
-FROM ${BUILD_FROM} AS BUILD_IMAGE
+ARG BUILD_FROM=alpine
+FROM node:16-alpine AS BUILD_IMAGE
 
 # Install dependencies
 RUN apk update && \
@@ -39,7 +38,7 @@ RUN npx pkg \
       backend
 
 # Stage 2
-FROM ${RUN_FROM}
+FROM ${BUILD_FROM}
 
 # Install dependencies
 RUN apk update && rm -rf /var/cache/apk/*

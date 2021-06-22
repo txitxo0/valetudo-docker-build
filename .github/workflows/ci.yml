@@ -9,46 +9,46 @@ jobs:
         include:
           # Alpine
           # - image_name: alpine-armv6
-          #   run_from: arm32v6/alpine:latest
+          #   build_from: arm32v6/alpine:latest
           #   pkg_target: node16-linuxstatic-armv6
           #   pkg_memory: 34
           - image_name: alpine-armv7
-            run_from: arm32v7/alpine:latest
+            build_from: arm32v7/alpine:latest
             pkg_target: node16-linuxstatic-armv7
             pkg_memory: 34
-          # - image_name: alpine-aarch64
-          #   run_from: arm64v8/alpine:latest
-          #   pkg_target: node16-linuxstatic-arm64
-          #   pkg_memory: 64
-          # - image_name: alpine-amd64
-          #   run_from: amd64/alpine:latest
-          #   pkg_target: node16-linuxstatic-x64
-          #   pkg_memory: 64
-          # - image_name: alpine-i386
-          #   run_from: i386/alpine:latest
-          #   pkg_target: node16-linuxstatic-x64
-          #   pkg_memory: 64
-          # # Home assistant
-          # - image_name: homeassistant-armhf
-          #   run_from: homeassistant/armhf-base:latest
-          #   pkg_target: node16-linuxstatic-armv7
-          #   pkg_memory: 34
-          # - image_name: homeassistant-armv7
-          #   run_from: homeassistant/armv7-base:latest
-          #   pkg_target: node16-linuxstatic-armv7
-          #   pkg_memory: 34
-          # - image_name: homeassistant-aarch64
-          #   run_from: homeassistant/aarch64-base:latest
-          #   pkg_target: node16-linuxstatic-arm64
-          #   pkg_memory: 64
-          # - image_name: homeassistant-amd64
-          #   run_from: homeassistant/amd64-base:latest
-          #   pkg_target: node16-linuxstatic-x64
-          #   pkg_memory: 64
-          # - image_name: homeassistant-i386
-          #   run_from: homeassistant/i386-base:latest
-          #   pkg_target: node16-linuxstatic-x64
-          #   pkg_memory: 64
+          - image_name: alpine-aarch64
+            build_from: arm64v8/alpine:latest
+            pkg_target: node16-linuxstatic-arm64
+            pkg_memory: 64
+          - image_name: alpine-amd64
+            build_from: amd64/alpine:latest
+            pkg_target: node16-linuxstatic-x64
+            pkg_memory: 64
+          - image_name: alpine-i386
+            build_from: i386/alpine:latest
+            pkg_target: node16-linuxstatic-x64
+            pkg_memory: 64
+          # Home assistant
+          - image_name: homeassistant-armhf
+            build_from: homeassistant/armhf-base:latest
+            pkg_target: node16-linuxstatic-armv7
+            pkg_memory: 34
+          - image_name: homeassistant-armv7
+            build_from: homeassistant/armv7-base:latest
+            pkg_target: node16-linuxstatic-armv7
+            pkg_memory: 34
+          - image_name: homeassistant-aarch64
+            build_from: homeassistant/aarch64-base:latest
+            pkg_target: node16-linuxstatic-arm64
+            pkg_memory: 64
+          - image_name: homeassistant-amd64
+            build_from: homeassistant/amd64-base:latest
+            pkg_target: node16-linuxstatic-x64
+            pkg_memory: 64
+          - image_name: homeassistant-i386
+            build_from: homeassistant/i386-base:latest
+            pkg_target: node16-linuxstatic-x64
+            pkg_memory: 64
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -69,15 +69,44 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          push: false
+          push: true
           tags: adrigzr/valetudo-conga:${{ matrix.image_name }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
           build-args: |
-            "RUN_FROM=${{ matrix.run_from }}"
+            "BUILD_FROM=${{ matrix.build_from }}"
             "PKG_TARGET=${{ matrix.pkg_target }}"
             "PKG_MEMORY=${{ matrix.pkg_memory }}"
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+  manifest:
+    runs-on: ubuntu-latest
+    name: Create and push manifest
+    needs: build
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: adrigzr
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Create manifest
+        run: |
+          docker manifest create adrigzr/valetudo-conga:alpine \
+            --amend adrigzr/valetudo-conga:alpine-armv7 \
+            --amend adrigzr/valetudo-conga:alpine-aarch64 \
+            --amend adrigzr/valetudo-conga:alpine-amd64 \
+            --amend adrigzr/valetudo-conga:alpine-i386
+          docker manifest create adrigzr/valetudo-conga:homeassistant \
+            --amend adrigzr/valetudo-conga:homeassistant-armhf \
+            --amend adrigzr/valetudo-conga:homeassistant-armv7 \
+            --amend adrigzr/valetudo-conga:homeassistant-aarch64 \
+            --amend adrigzr/valetudo-conga:homeassistant-amd64 \
+            --amend adrigzr/valetudo-conga:homeassistant-i386
+      - name: Push manifest
+        run: |
+          docker manifest push adrigzr/valetudo-conga:alpine
+          docker manifest push adrigzr/valetudo-conga:homeassistant
