@@ -1,11 +1,11 @@
 # Stage 1
-ARG BUILD_FROM=arm32v7/node:16-alpine
-ARG RUN_FROM=arm32v7/alpine
+ARG BUILD_FROM=node:16-alpine
+ARG RUN_FROM=alpine
 FROM ${BUILD_FROM} AS BUILD_IMAGE
 
 # Install dependencies
 RUN apk update && \
-    apk add --no-cache alpine-sdk python3 linux-headers && \
+    apk add --no-cache git && \
     rm -rf /var/cache/apk/*
 
 # Working directory
@@ -18,16 +18,16 @@ ADD https://api.github.com/repos/adrigzr/Valetudo/git/refs/heads/feature-conga /
 RUN git clone --depth 1 https://github.com/adrigzr/Valetudo --branch feature-conga --single-branch .
 
 # Build environment
-ENV PKG_CACHE_PATH=./build_dependencies/pkg
 ENV NODE_ENV=production
+ENV PKG_CACHE_PATH=./build_dependencies/pkg
 
 # Install dependencies
 RUN npm ci
-RUN npm install pkg
+RUN npm install pkg@5.1.0
 
 # Build args
-ARG PKG_TARGET=node16-linuxstatic-armv7
-ARG PKG_MEMORY=34
+ARG PKG_MEMORY=64
+ARG PKG_TARGET=node16-linuxstatic
 
 # Build binary
 RUN npx pkg \
