@@ -5,7 +5,7 @@ FROM ${BUILD_FROM} AS BUILD_IMAGE
 
 # Install dependencies
 RUN apk update && \
-    apk add --no-cache alpine-sdk python3 && \
+    apk add --no-cache alpine-sdk python3 linux-headers && \
     rm -rf /var/cache/apk/*
 
 # Working directory
