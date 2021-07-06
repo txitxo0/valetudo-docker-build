@@ -21,8 +21,8 @@ ENV NODE_ENV=production
 ENV PKG_CACHE_PATH=./build_dependencies/pkg
 
 # Install dependencies
+RUN npm install -g npm
 RUN npm ci
-RUN npm install pkg@5.1.0
 
 # Build args
 ARG PKG_MEMORY=64
@@ -31,9 +31,10 @@ ARG PKG_TARGET=node16-linuxstatic
 # Build binary
 RUN npx pkg \
       --targets ${PKG_TARGET} \
+      --compress Brotli \
       --no-bytecode \
       --public-packages "*" \
-      --options "expose-gc,max-heap-size=${PKG_MEMORY}" \
+      --options "expose-gc,max-heap-size=${PKG_MEMORY},sparkplug" \
       --output ./build/valetudo \
       backend
 
