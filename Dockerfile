@@ -22,7 +22,10 @@ ENV PKG_CACHE_PATH=./build_dependencies/pkg
 
 # Install dependencies
 RUN npm install -g npm
-RUN npm ci
+RUN npm ci --production=false
+
+# Build openapi schema
+RUN npm run build_openapi_schema
 
 # Build args
 ARG PKG_MEMORY=64
