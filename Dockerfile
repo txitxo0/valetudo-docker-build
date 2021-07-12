@@ -1,5 +1,5 @@
 # Stage 1
-ARG BUILD_FROM=alpine
+ARG BUILD_FROM=amd64/alpine:latest
 FROM node:16-alpine AS BUILD_IMAGE
 
 # Install dependencies
@@ -28,8 +28,8 @@ RUN npm ci --production=false
 RUN npm run build_openapi_schema
 
 # Build args
-ARG PKG_MEMORY=64
-ARG PKG_TARGET=node16-linuxstatic
+ARG PKG_TARGET=node16-linuxstatic-x64
+ARG PKG_OPTIONS=expose-gc,max-heap-size=64
 
 # Build binary
 RUN npx pkg \
@@ -37,7 +37,7 @@ RUN npx pkg \
       --compress Brotli \
       --no-bytecode \
       --public-packages "*" \
-      --options "expose-gc,max-heap-size=${PKG_MEMORY},sparkplug" \
+      --options "${PKG_OPTIONS}" \
       --output ./build/valetudo \
       backend
 
