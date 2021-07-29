@@ -1,11 +1,17 @@
 # Stage 1
-ARG BUILD_FROM=amd64/alpine:latest
-FROM node:16-alpine AS BUILD_IMAGE
+ARG BUILD_FROM=amd64/alpine:3.14
+FROM node:16.5-alpine3.14 AS BUILD_IMAGE
 
 # Install dependencies
 RUN apk update && \
     apk add --no-cache git && \
     rm -rf /var/cache/apk/*
+
+# Create working directory
+RUN mkdir -p /usr/src/app && chown -R node:node /usr/src/app
+
+# Configure user
+USER node:node
 
 # Working directory
 WORKDIR /usr/src/app
@@ -21,7 +27,6 @@ ENV NODE_ENV=production
 ENV PKG_CACHE_PATH=./build_dependencies/pkg
 
 # Install dependencies
-RUN npm install -g npm
 RUN npm ci --production=false
 
 # Build openapi schema
@@ -33,7 +38,7 @@ ARG PKG_OPTIONS=expose-gc,max-heap-size=64
 
 # Build binary
 RUN npx pkg \
-      --targets ${PKG_TARGET} \
+      --targets "${PKG_TARGET}" \
       --compress Brotli \
       --no-bytecode \
       --public-packages "*" \
@@ -45,13 +50,20 @@ RUN npx pkg \
 FROM ${BUILD_FROM}
 
 # Install dependencies
-RUN apk update && rm -rf /var/cache/apk/*
+RUN apk update && \
+    apk add --no-cache dumb-init && \
+    rm -rf /var/cache/apk/*
+
+# Configure user
+RUN addgroup -S node && adduser -S node -G node
+RUN mkdir -p /etc/valetudo && chown -R node:node /etc/valetudo
+USER node:node
 
 # Working directory
 WORKDIR /usr/local/bin
 
 # Copy from build image
-COPY --from=BUILD_IMAGE /usr/src/app/build/valetudo ./valetudo
+COPY --chown=node:node --from=BUILD_IMAGE /usr/src/app/build/valetudo ./valetudo
 
 # Exposed ports
 EXPOSE 8080
@@ -59,8 +71,8 @@ EXPOSE 4010 4030 4050
 
 # Run environment
 ENV LANG C.UTF-8
-ENV VALETUDO_CONFIG_PATH=/etc/valetudo.json
+ENV VALETUDO_CONFIG_PATH=/etc/valetudo/config.json
 ENV NODE_ENV=production
 
 # Run binary
-CMD ["valetudo"]
+CMD ["dumb-init", "valetudo"]
