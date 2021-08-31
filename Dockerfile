@@ -32,6 +32,9 @@ RUN npm ci --production=false
 # Build openapi schema
 RUN npm run build_openapi_schema
 
+# Build frontend
+RUN npm run build --workspace=frontend
+
 # Build args
 ARG PKG_TARGET=node16-linuxstatic-x64
 ARG PKG_OPTIONS=expose-gc,max-heap-size=64
